@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin />
+    <link
+        rel="stylesheet"
+        as="style"
+        onload="this.rel='stylesheet'"
+        href="https://fonts.googleapis.com/css2?display=swap&family=Inter%3Awght%40400%3B500%3B700%3B900&family=Noto+Sans%3Awght%40400%3B500%3B700%3B900"
+    />
+    <title>Healthcare RCM Analytics Platform</title>
+    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <style>
+        :root {
+            --bg-primary: #0F1419;
+            --bg-secondary: #1A1F2E;
+            --bg-card: #212837;
+            --bg-card-hover: #2A3441;
+            --text-primary: #F8FAFC;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --border-subtle: #334155;
+            --border-accent: #475569;
+            --accent-primary: #3B82F6;
+            --accent-success: #10B981;
+            --accent-warning: #F59E0B;
+            --accent-danger: #EF4444;
+            --accent-info: #8B5CF6;
+            --gradient-primary: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+            --gradient-success: linear-gradient(135deg, #10B981 0%, #047857 100%);
+            --gradient-warning: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+            --gradient-danger: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .glass-card {
+            background: rgba(33, 40, 55, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        .metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-accent);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .loading-shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .data-point {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .data-point:hover {
+            transform: scale(1.1);
+            filter: brightness(1.2);
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-paid { background: var(--gradient-success); color: white; }
+        .status-pending { background: var(--gradient-warning); color: white; }
+        .status-denied { background: var(--gradient-danger); color: white; }
+        .status-review { background: var(--gradient-primary); color: white; }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            border: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .nav-item {
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item:hover {
+            color: var(--accent-primary);
+        }
+
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1rem;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent-primary);
+            border-radius: 1px;
+        }
+
+        .progress-bar {
+            background: var(--bg-secondary);
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 0.5rem;
+            background: var(--gradient-primary);
+            transition: width 0.5s ease;
+        }
+
+        .floating-action {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--gradient-primary);
+            color: white;
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-xl);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .floating-action:hover {
+            transform: scale(1.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-[var(--bg-primary)] text-[var(--text-primary)] antialiased">
+    <div class="min-h-screen flex flex-col">
+        <!-- Enhanced Header -->
+        <header class="glass-card border-b border-[var(--border-subtle)] px-6 py-4 sticky top-0 z-50">
+            <div class="flex items-center justify-between max-w-7xl mx-auto">
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold">Healthcare RCM</h1>
+                        <p class="text-sm text-[var(--text-secondary)]">Revenue Cycle Analytics</p>
+                    </div>
+                </div>
+
+                <nav class="hidden md:flex items-center space-x-8">
+                    <a href="#" class="nav-item active" data-section="dashboard">Dashboard</a>
+                    <a href="#" class="nav-item" data-section="analytics">Analytics</a>
+                    <a href="#" class="nav-item" data-section="reports">Reports</a>
+                    <a href="#" class="nav-item" data-section="settings">Settings</a>
+                </nav>
+
+                <div class="flex items-center space-x-4">
+                    <button class="p-2 rounded-lg bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 11H4l5-5v5z"></path>
+                        </svg>
+                    </button>
+                    <div class="w-8 h-8 bg-gradient-to-br from-green-400 to-green-500 rounded-full"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 px-6 py-8 max-w-7xl mx-auto w-full">
+            <!-- Dashboard Section -->
+            <div id="dashboard-section" class="space-y-8">
+                <!-- Key Metrics Overview -->
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-3xl font-bold">Revenue Cycle Overview</h2>
+                            <p class="text-[var(--text-secondary)] mt-1">Real-time performance metrics and insights</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <select class="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option>Last 30 Days</option>
+                                <option>Last Quarter</option>
+                                <option>Year to Date</option>
+                                <option>All Time</option>
+                            </select>
+                            <button id="refresh-btn" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                <span>Refresh</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Primary KPI Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="metric-card rounded-xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="p-2 bg-blue-500/10 rounded-lg">
+                                    <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                    </svg>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm text-green-400 font-medium">+12.5%</div>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-sm font-medium text-[var(--text-secondary)]">Total Revenue</h3>
+                                <p class="text-2xl font-bold" id="total-revenue">$8.75M</p>
+                                <div class="progress-bar h-2">
+                                    <div class="progress-fill" style="width: 85%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card rounded-xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="p-2 bg-green-500/10 rounded-lg">
+                                    <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm text-green-400 font-medium">+2.1%</div>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-sm font-medium text-[var(--text-secondary)]">Collection Rate</h3>
+                                <p class="text-2xl font-bold" id="collection-rate">92.0%</p>
+                                <div class="progress-bar h-2">
+                                    <div class="progress-fill bg-gradient-to-r from-green-500 to-green-600" style="width: 92%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card rounded-xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="p-2 bg-orange-500/10 rounded-lg">
+                                    <svg class="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm text-red-400 font-medium">-3.2%</div>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-sm font-medium text-[var(--text-secondary)]">Days in AR</h3>
+                                <p class="text-2xl font-bold" id="days-in-ar">45.2</p>
+                                <div class="progress-bar h-2">
+                                    <div class="progress-fill bg-gradient-to-r from-orange-500 to-orange-600" style="width: 65%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card rounded-xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="p-2 bg-red-500/10 rounded-lg">
+                                    <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm text-green-400 font-medium">-1.8%</div>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-sm font-medium text-[var(--text-secondary)]">Denial Rate</h3>
+                                <p class="text-2xl font-bold" id="denial-rate">8.0%</p>
+                                <div class="progress-bar h-2">
+                                    <div class="progress-fill bg-gradient-to-r from-red-500 to-red-600" style="width: 20%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts and Analytics -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- AR Trend Chart -->
+                    <div class="metric-card rounded-xl p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-semibold">AR Trend Analysis</h3>
+                            <button class="text-sm text-blue-400 hover:text-blue-300 transition-colors">View Details</button>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="ar-trend-chart" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Aging Buckets -->
+                    <div class="metric-card rounded-xl p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-semibold">AR Aging Analysis</h3>
+                            <button class="text-sm text-blue-400 hover:text-blue-300 transition-colors">Export</button>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-3 bg-[var(--bg-secondary)] rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                                    <span class="text-sm font-medium">0-30 days</span>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-bold">$420K</div>
+                                    <div class="text-xs text-[var(--text-secondary)]">35.0%</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-[var(--bg-secondary)] rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                    <span class="text-sm font-medium">31-60 days</span>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-bold">$360K</div>
+                                    <div class="text-xs text-[var(--text-secondary)]">30.0%</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-[var(--bg-secondary)] rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-3 h-3 bg-orange-500 rounded-full"></div>
+                                    <span class="text-sm font-medium">61-90 days</span>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-bold">$240K</div>
+                                    <div class="text-xs text-[var(--text-secondary)]">20.0%</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-[var(--bg-secondary)] rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                                    <span class="text-sm font-medium">90+ days</span>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-bold">$180K</div>
+                                    <div class="text-xs text-[var(--text-secondary)]">15.0%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Provider Performance & Claims Analysis -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Top Providers -->
+                    <div class="metric-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold mb-6">Top Performing Providers</h3>
+                        <div class="space-y-4" id="provider-list">
+                            <!-- Provider data will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Denial Reasons -->
+                    <div class="metric-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold mb-6">Top Denial Reasons</h3>
+                        <div class="chart-container">
+                            <canvas id="denial-chart" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="metric-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold mb-6">Quick Actions</h3>
+                        <div class="space-y-3">
+                            <button class="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white p-3 rounded-lg text-sm font-medium transition-all duration-200">
+                                Generate Monthly Report
+                            </button>
+                            <button class="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white p-3 rounded-lg text-sm font-medium transition-all duration-200">
+                                Export AR Data
+                            </button>
+                            <button class="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white p-3 rounded-lg text-sm font-medium transition-all duration-200">
+                                Schedule Report
+                            </button>
+                            <button class="w-full bg-[var(--bg-secondary)] hover:bg-[var(--bg-card-hover)] text-[var(--text-primary)] p-3 rounded-lg text-sm font-medium transition-all duration-200 border border-[var(--border-subtle)]">
+                                View All Accounts
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity & Patient Accounts -->
+                <div class="metric-card rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold">Patient Accounts</h3>
+                        <div class="flex items-center space-x-3">
+                            <input type="text" placeholder="Search accounts..." class="bg-[var(--bg-secondary)] border border-[var(--border-subtle)] rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64">
+                            <button class="bg-[var(--bg-secondary)] hover:bg-[var(--bg-card-hover)] p-2 rounded-lg border border-[var(--border-subtle)] transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-[var(--border-subtle)]">
+                                    <th class="text-left py-3 px-4 font-medium text-[var(--text-secondary)]">Patient</th>
+                                    <th class="text-left py-3 px-4 font-medium text-[var(--text-secondary)]">Account #</th>
+                                    <th class="text-left py-3 px-4 font-medium text-[var(--text-secondary)]">Service Date</th>
+                                    <th class="text-left py-3 px-4 font-medium text-[var(--text-secondary)]">Amount</th>
+                                    <th class="text-left py-3 px-4 font-medium text-[var(--text-secondary)]">Status</th>
+                                    <th class="text-left py-3 px-4 font-medium text-[var(--text-secondary)]">Days in AR</th>
+                                    <th class="text-left py-3 px-4 font-medium text-[var(--text-secondary)]">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="patient-table-body" class="divide-y divide-[var(--border-subtle)]">
+                                <!-- Patient data will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="flex items-center justify-between mt-6">
+                        <div class="text-sm text-[var(--text-secondary)]">
+                            Showing <span id="records-info">1-10 of 245</span> records
+                        </div>
+                        <div id="pagination-controls" class="flex items-center space-x-2">
+                            <button id="prev-btn" class="px-3 py-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-card-hover)] rounded-lg border border-[var(--border-subtle)] transition-colors text-sm">Previous</button>
+                            <button class="px-3 py-2 bg-blue-500 text-white rounded-lg transition-colors text-sm page-btn" data-page="1">1</button>
+                            <button class="px-3 py-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-card-hover)] rounded-lg border border-[var(--border-subtle)] transition-colors text-sm page-btn" data-page="2">2</button>
+                            <button class="px-3 py-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-card-hover)] rounded-lg border border-[var(--border-subtle)] transition-colors text-sm page-btn" data-page="3">3</button>
+                            <button id="next-btn" class="px-3 py-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-card-hover)] rounded-lg border border-[var(--border-subtle)] transition-colors text-sm">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="floating-action" title="Quick Actions">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+    </div>
+
+    <!-- Tooltip -->
+    <div id="tooltip" class="tooltip"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
